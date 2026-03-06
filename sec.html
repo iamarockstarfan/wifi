@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title></title>
+  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      height: 100vh;
+      background: #ffffff;
+      font-family: system-ui, -apple-system, sans-serif;
+      overflow: hidden;
+      color: white;
+    }
+    #trigger {
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      width: 32px;
+      height: 32px;
+      opacity: 0;
+      z-index: 9999;
+      cursor: pointer;
+    }
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 1000;
+      transition: opacity 0.6s;
+    }
+    #video-container {
+      position: relative;
+      width: 90vw;
+      max-width: 480px;
+      aspect-ratio: 4/3;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 0 40px rgba(0,255,180,0.3);
+      margin-bottom: 2rem;
+    }
+    #video, #canvas {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    #canvas {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .status-text {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin: 1rem 0;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.6);
+    }
+    .subtitle {
+      font-size: 1.1rem;
+      opacity: 0.8;
+      margin-bottom: 1.5rem;
+    }
+    .spinner {
+      width: 80px;
+      height: 80px;
+      border: 6px solid #00ff9d44;
+      border-top: 6px solid #00ff9d;
+      border-radius: 50%;
+      animation: spin 1.2s linear infinite;
+      margin: 2rem auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #retryBtn {
+      display: none;
+      padding: 0.9rem 2.2rem;
+      font-size: 1.2rem;
+      font-weight: bold;
+      background: linear-gradient(135deg, #00ff9d, #00c8ff);
+      color: black;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 8px 25px rgba(0,255,157,0.4);
+      transition: all 0.3s;
+      margin-top: 1.5rem;
+    }
+    #retryBtn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 35px rgba(0,255,157,0.6);
+    }
+    .success-screen {
+      background: linear-gradient(135deg, #00c853, #00e676);
+      color: black;
+    }
+    .fail-screen {
+      background: linear-gradient(135deg, #d50000, #ff5252);
+    }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<button id="trigger"></button>
+
+<div id="overlay">
+  <div id="video-container">
+    <video id="video" autoplay muted playsinline></video>
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <div class="spinner" id="spinner"></div>
+
+  <div class="status-text" id="mainText">Initializing scan...</div>
+  <div class="subtitle" id="subText">Please look straight at the camera</div>
+
+  <button id="retryBtn">Retry Verification</button>
+</div>
+
+<script>
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const overlay = document.getElementById('overlay');
+const mainText = document.getElementById('mainText');
+const subText = document.getElementById('subText');
+const spinner = document.getElementById('spinner');
+const retryBtn = document.getElementById('retryBtn');
+
+const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@0.22.2/weights/';
+
+const REF_DESCRIPTOR = new Float32Array([
+  -0.16083209216594696,0.05017932504415512,0.0459735281765461,-0.032153140753507614,-0.10642893612384796,
+  -0.024279797449707985,-0.016587749123573303,-0.04459153860807419,0.13998326659202576,-0.1387113630771637,
+  0.223501056432724,-0.056238848716020584,-0.18469607830047607,-0.11640550941228867,0.005373072344809771,
+  0.1628466248512268,-0.047109201550483704,-0.12886977195739746,-0.13172012567520142,-0.1144687682390213,
+  0.01690208911895752,-0.012262754142284393,-0.049030851572752,0.03428465127944946,-0.153143510222435,
+  -0.37606585025787354,-0.04421274736523628,-0.0779731422662735,-0.086550273001194,-0.12482056766748428,
+  -0.06573786586523056,0.03942761570215225,-0.19311876595020294,-0.10329786688089371,-0.02990395948290825,
+  0.09545929729938507,-0.01545440312474966,0.00020492446492426097,0.12953104078769684,0.011241099797189236,
+  -0.14734318852424622,-0.03318653628230095,0.06391007453203201,0.24473276734352112,0.16301532089710236,
+  0.03514790162444115,0.011051108129322529,-0.005247571039944887,0.1143452525138855,-0.31002387404441833,
+  0.02509089931845665,0.07733290642499924,0.09638552367687225,0.025838328525424004,0.12882199883460999,
+  -0.04652315005660057,-0.04739919304847717,0.10262274742126465,-0.15974248945713043,0.04056687653064728,
+  -0.02864958345890045,-0.025212692096829414,-0.11007564514875412,-0.10185778886079788,0.2285195142030716,
+  0.1837681084871292,-0.07742070406675339,-0.049442701041698456,0.1426328867673874,-0.13016308844089508,
+  -0.013879837468266487,0.0117546571418643,-0.07039899379014969,-0.22863149642944336,-0.25684207677841187,
+  0.10420946776866913,0.4301004409790039,0.17615945637226105,-0.19640059769153595,-0.0016248059691861272,
+  -0.04472290724515915,-0.03912454470992088,0.12125562131404877,-0.015991147607564926,-0.03612816333770752,
+  0.030750785022974014,-0.03667951375246048,0.09984487295150757,0.2004861980676651,-0.01684415526688099,
+  -0.0015315029304474592,0.19162426888942719,-0.019811443984508514,0.03945521265268326,0.02930379845201969,
+  0.012698017992079258,-0.07267976552248001,0.0052163791842758656,-0.12764707207679749,0.0024211627896875143,
+  0.10561194270849228,-0.06062479317188263,0.048583898693323135,0.038937002420425415,-0.12366019189357758,
+  0.07551024109125137,-0.020718086510896683,-0.017041103914380074,-0.0041695511899888515,0.05901838093996048,
+  -0.11841798573732376,-0.06615568697452545,0.10755658149719238,-0.17166779935359955,0.13085755705833435,
+  0.14842034876346588,-0.10567540675401688,0.15291355550289154,0.06675660610198975,0.04313988238573074,
+  0.031687021255493164,-0.016043340787291527,-0.09562312066555023,-0.058347828686237335,0.09513852000236511,
+  -0.007848993875086308,0.05679747089743614,-0.0028732847422361374
+]);
+
+let stream = null;
+let intervalId = null;
+
+async function loadModels() {
+  await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+  await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+  await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+}
+
+function drawBox(box, color = '#00ff9d', lineWidth = 4) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lineWidth;
+  ctx.strokeRect(box.x, box.y, box.width, box.height);
+}
+
+async function startVerification() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+    video.srcObject = stream;
+    await new Promise(r => video.onloadedmetadata = r);
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    overlay.style.display = 'flex';
+    spinner.classList.remove('hidden');
+
+    mainText.textContent = "Face Scan in Progress";
+    subText.textContent = "Keep your face centered and well-lit";
+
+    let attempts = 0;
+    const maxAttempts = 15;
+
+    intervalId = setInterval(async () => {
+      attempts++;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+        .withFaceLandmarks().withFaceDescriptor();
+
+      if (detection) {
+        drawBox(detection.detection.box, '#00ff9d', 5);
+        mainText.textContent = "Face Detected";
+        subText.textContent = "Verifying identity...";
+
+        const distance = faceapi.euclideanDistance(detection.descriptor, REF_DESCRIPTOR);
+
+        if (distance < 0.55) {
+          clearInterval(intervalId);
+          success();
+          return;
+        } else {
+          mainText.textContent = "Identity Mismatch";
+          subText.textContent = "Distance too high – try again";
+          drawBox(detection.detection.box, '#ff5252', 6);
+        }
+      } else {
+        mainText.textContent = "No Face Detected";
+        subText.textContent = "Please look directly at the camera";
+      }
+
+      if (attempts >= maxAttempts) {
+        clearInterval(intervalId);
+        failed();
+      }
+    }, 1000);
+
+  } catch (err) {
+    mainText.textContent = "Camera Access Failed";
+    subText.textContent = "Please allow camera permission";
+    failed();
+  }
+}
+
+function success() {
+  spinner.classList.add('hidden');
+  overlay.classList.add('success-screen');
+  mainText.textContent = "VERIFIED";
+  subText.textContent = "Access Granted";
+  retryBtn.classList.add('hidden');
+  setTimeout(() => {
+    window.location.href = 'rec.html';
+  }, 1800);
+}
+
+function failed() {
+  clearInterval(intervalId);
+  spinner.classList.add('hidden');
+  overlay.classList.add('fail-screen');
+  mainText.textContent = "VERIFICATION FAILED";
+  subText.textContent = "Please try again";
+  retryBtn.style.display = 'block';
+}
+
+function reset() {
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+  }
+  clearInterval(intervalId);
+  overlay.style.display = 'none';
+  overlay.classList.remove('success-screen', 'fail-screen');
+  retryBtn.style.display = 'none';
+  spinner.classList.remove('hidden');
+  mainText.textContent = "Initializing scan...";
+  subText.textContent = "Please look straight at the camera";
+}
+
+retryBtn.onclick = () => {
+  reset();
+  startVerification();
+};
+
+document.getElementById('trigger').onclick = async () => {
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  const code = hh + mm;
+
+  const entered = prompt("");
+  if (entered?.trim() === code) {
+    await loadModels();
+    startVerification();
+  } else {
+    // silent fail - no feedback on wrong password
+  }
+};
+</script>
+</body>
+</html>

